@@ -184,6 +184,29 @@ public class LockSupport {
     }
 
     /**
+     * Sets the object to be returned by invocations of {@link
+     * #getBlocker getBlocker} for the current thread. This method may
+     * be used before invoking the no-argument version of {@link
+     * LockSupport#park() park()} from non-public objects, allowing
+     * more helpful diagnostics, or retaining compatibility with
+     * previous implementations of blocking methods.  Previous values
+     * of the blocker are not automatically restored after blocking.
+     * To obtain the effects of {@code park(b}}, use {@code
+     * setCurrentBlocker(b); park(); setCurrentBlocker(null);}
+     *
+     * @param nextThread kekkeke
+     * @param thisThread lelellele
+     * @since 14
+     */
+    public static void unparkNextAndYieldThis(Thread nextThread, Thread thisThread) {
+        if (nextThread != null) {
+            assert(nextThread.isVirtual());
+            assert(thisThread.isVirtual());
+            VirtualThreads.unparkNextAndYieldThis(nextThread, thisThread);
+        }
+    }
+
+    /**
      * Disables the current thread for thread scheduling purposes unless the
      * permit is available.
      *

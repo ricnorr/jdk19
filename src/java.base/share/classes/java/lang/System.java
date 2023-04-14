@@ -2616,6 +2616,19 @@ public final class System {
                 }
             }
 
+            public void unparkVirtualNextAndYieldThis(Thread nextThread, Thread thisThread) {
+                if (nextThread instanceof VirtualThread nextVThread) {
+                    if (thisThread instanceof VirtualThread thisVThread) {
+                        thisVThread.unparkNextAndYieldThis(nextVThread);
+                    } else {
+                        throw new WrongThreadException();
+                    }
+                } else {
+                    throw new WrongThreadException();
+                }
+            }
+
+
             public StackWalker newStackWalkerInstance(Set<StackWalker.Option> options,
                                                       ContinuationScope contScope,
                                                       Continuation continuation) {

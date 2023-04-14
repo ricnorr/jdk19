@@ -520,6 +520,8 @@ public interface JavaLangAccess {
      */
     void unparkVirtualThread(Thread thread);
 
+    void unparkVirtualNextAndYieldThis(Thread nextThread, Thread thisThread);
+
     /**
      * Creates a new StackWalker
      */

@@ -92,4 +92,8 @@ public final class VirtualThreads {
     public static void unpark(Thread thread) {
         JLA.unparkVirtualThread(thread);
     }
-}
+
+    public static void unparkNextAndYieldThis(Thread nextThread, Thread thisThread) {
+        JLA.unparkVirtualNextAndYieldThis(nextThread, thisThread);
+    }
+    }

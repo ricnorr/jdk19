@@ -404,6 +404,14 @@ final class VirtualThread extends BaseVirtualThread {
             // lazy submit to continue on the current thread as carrier if possible
             lazySubmitRunContinuation();
         }
+        if (runThisAfterYield != null) {
+            VirtualThread runThis = (VirtualThread) runThisAfterYield;
+            runThisAfterYield = null;
+            boolean smart = runThis.unparkWithoutQueue();
+            if (smart) {
+                runThis.runContinuation.run();
+            }
+        }
     }
 
     /**
@@ -646,6 +654,49 @@ final class VirtualThread extends BaseVirtualThread {
             }
         }
     }
+
+    /**
+     * Re-enables this virtual thread for scheduling. If the virtual thread was
+     * {@link #park() parked} then it will be unblocked, otherwise its next call
+     * to {@code park} or {@linkplain #parkNanos(long) parkNanos} is guaranteed
+     * not to block.
+     * @throws RejectedExecutionException if the scheduler cannot accept a task
+     */
+    @ChangesCurrentThread
+    boolean unparkWithoutQueue() {
+        Thread currentThread = Thread.currentThread();
+        if (!getAndSetParkPermit(true) && currentThread != this) {
+            int s = state();
+            if (s == PARKED && compareAndSetState(PARKED, RUNNABLE)) {
+                if (currentThread instanceof VirtualThread vthread) {
+                    Thread carrier = vthread.carrierThread;
+                    carrier.setCurrentThread(carrier);
+                    return true;
+                } else {
+                    throw new IllegalStateException("WTF1");
+                }
+            } else if (s == PINNED) {
+                throw new IllegalStateException("WTF");
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Re-enables this virtual thread for scheduling. If the virtual thread was
+     * {@link #park() parked} then it will be unblocked, otherwise its next call
+     * to {@code park} or {@linkplain #parkNanos(long) parkNanos} is guaranteed
+     * not to block.
+     * @throws RejectedExecutionException if the scheduler cannot accept a task
+     */
+    @ChangesCurrentThread
+    void unparkNextAndYieldThis(VirtualThread nextVThread) {
+        VirtualThread thisThread = this;
+        Thread carrier = carrierThread;
+        carrier.runThisAfterYield = nextVThread;
+        tryYield();
+    }
+
 
     /**
      * Attempts to yield the current virtual thread (Thread.yield).

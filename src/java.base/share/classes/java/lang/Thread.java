@@ -234,6 +234,9 @@ public class Thread implements Runnable {
     // context ClassLoader
     private volatile ClassLoader contextClassLoader;
 
+    // context ClassLoader
+    volatile Thread runThisAfterYield;
+
     // inherited AccessControlContext, this could be moved to FieldHolder
     @SuppressWarnings("removal")
     private AccessControlContext inheritedAccessControlContext;
