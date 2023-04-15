@@ -3135,9 +3135,19 @@ header extends java/util/concurrent/locks/AbstractOwnableSynchronizer implements
 innerclass innerClass java/util/concurrent/locks/AbstractQueuedSynchronizer$ConditionObject outerClass java/util/concurrent/locks/AbstractQueuedSynchronizer innerClassName ConditionObject flags 1
 innerclass innerClass java/lang/invoke/MethodHandles$Lookup outerClass java/lang/invoke/MethodHandles innerClassName Lookup flags 19
 
+class name java/util/concurrent/locks/MyAbstractQueuedSynchronizer
+header extends java/util/concurrent/locks/MyAbstractOwnableSynchronizer implements java/io/Serializable flags 421
+innerclass innerClass java/util/concurrent/locks/MyAbstractQueuedSynchronizer$ConditionObject outerClass java/util/concurrent/locks/MyAbstractQueuedSynchronizer innerClassName ConditionObject flags 1
+innerclass innerClass java/lang/invoke/MethodHandles$Lookup outerClass java/lang/invoke/MethodHandles innerClassName Lookup flags 19
+
+
 class name java/util/concurrent/locks/ReentrantLock
 header extends java/lang/Object implements java/util/concurrent/locks/Lock,java/io/Serializable flags 21
 innerclass innerClass java/util/concurrent/locks/AbstractQueuedSynchronizer$ConditionObject outerClass java/util/concurrent/locks/AbstractQueuedSynchronizer innerClassName ConditionObject flags 1
+
+class name java/util/concurrent/locks/LocalReentrantLock
+header extends java/lang/Object implements java/util/concurrent/locks/Lock,java/io/Serializable flags 21
+innerclass innerClass java/util/concurrent/locks/MyAbstractQueuedSynchronizer$ConditionObject outerClass java/util/concurrent/locks/MyAbstractQueuedSynchronizer innerClassName ConditionObject flags 1
 
 class name java/util/concurrent/locks/ReentrantReadWriteLock
 header extends java/lang/Object implements java/util/concurrent/locks/ReadWriteLock,java/io/Serializable flags 21

@@ -110,6 +110,9 @@ public class ReentrantLock implements Lock, java.io.Serializable {
     /** Synchronizer providing all implementation mechanics */
     private final Sync sync;
 
+    /** Numa mode **/
+    private boolean numaMode = false;
+
     /**
      * Base of synchronization control for this lock. Subclassed
      * into fair and nonfair versions below. Uses AQS state to
@@ -117,6 +120,14 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      */
     abstract static class Sync extends AbstractQueuedSynchronizer {
         private static final long serialVersionUID = -5179523762034025860L;
+
+        public Sync(boolean numaMode) {
+            super(numaMode);
+        }
+
+        public Sync() {
+            super();
+        }
 
         /**
          * Performs non-fair tryLock.
@@ -220,6 +231,14 @@ public class ReentrantLock implements Lock, java.io.Serializable {
     static final class NonfairSync extends Sync {
         private static final long serialVersionUID = 7316153563782823691L;
 
+        public NonfairSync(boolean numaMode) {
+            super(numaMode);
+        }
+
+        public NonfairSync() {
+            super();
+        }
+
         final boolean initialTryLock() {
             Thread current = Thread.currentThread();
             if (compareAndSetState(0, 1)) { // first attempt is unguarded
@@ -252,6 +271,14 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      */
     static final class FairSync extends Sync {
         private static final long serialVersionUID = -3000897897090466540L;
+
+        public FairSync(boolean numaMode) {
+            super(numaMode);
+        }
+
+        public FairSync() {
+            super();
+        }
 
         /**
          * Acquires only if reentrant or queue is empty.
@@ -302,6 +329,17 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      */
     public ReentrantLock(boolean fair) {
         sync = fair ? new FairSync() : new NonfairSync();
+    }
+
+    /**
+     * Creates an instance of {@code ReentrantLock} with the
+     * given fairness policy.
+     *
+     * @param fair {@code true} if this lock should use a fair ordering policy
+     * @param numaMode aboba
+     */
+    public ReentrantLock(boolean fair, boolean numaMode) {
+        sync = fair ? new FairSync(numaMode) : new NonfairSync(numaMode);
     }
 
     /**
