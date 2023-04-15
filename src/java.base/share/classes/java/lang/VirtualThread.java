@@ -247,10 +247,46 @@ final class VirtualThread extends BaseVirtualThread {
 
     /**
      * Submits the runContinuation task to the scheduler.
+     * @param {@code lazySubmit} to lazy submit
+     * @throws RejectedExecutionException
+     * @see ForkJoinPool#lazySubmit(ForkJoinTask)
+     */
+    private void submitRunContinuationOnThisCarrier(boolean lazySubmit, Thread carrierThread) {
+        try {
+            if (lazySubmit && scheduler instanceof ForkJoinPool pool) {
+                pool.lazySubmit(ForkJoinTask.adapt(runContinuation));
+            } else {
+                if (scheduler instanceof ForkJoinPool pool) {
+                    pool.runOnThisCarrier(ForkJoinTask.adapt(runContinuation), carrierThread);
+                }
+                scheduler.execute(runContinuation);
+            }
+        } catch (RejectedExecutionException ree) {
+            // record event
+            var event = new VirtualThreadSubmitFailedEvent();
+            if (event.isEnabled()) {
+                event.javaThreadId = threadId();
+                event.exceptionMessage = ree.getMessage();
+                event.commit();
+            }
+            throw ree;
+        }
+    }
+
+    /**
+     * Submits the runContinuation task to the scheduler.
      * @throws RejectedExecutionException
      */
     private void submitRunContinuation() {
         submitRunContinuation(false);
+    }
+
+    /**
+     * Submits the runContinuation task to the scheduler.
+     * @throws RejectedExecutionException
+     */
+    private void submitRunContinuationOnThisCarrier(Thread carrierThread) {
+        submitRunContinuationOnThisCarrier(false, carrierThread);
     }
 
     /**
@@ -634,6 +670,42 @@ final class VirtualThread extends BaseVirtualThread {
                     }
                 } else {
                     submitRunContinuation();
+                }
+            } else if (s == PINNED) {
+                // unpark carrier thread when pinned.
+                synchronized (carrierThreadAccessLock()) {
+                    Thread carrier = carrierThread;
+                    if (carrier != null && state() == PINNED) {
+                        U.unpark(carrier);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Re-enables this virtual thread for scheduling. If the virtual thread was
+     * {@link #park() parked} then it will be unblocked, otherwise its next call
+     * to {@code park} or {@linkplain #parkNanos(long) parkNanos} is guaranteed
+     * not to block.
+     * @throws RejectedExecutionException if the scheduler cannot accept a task
+     */
+    @ChangesCurrentThread
+    void unparkAndRunOnThisCarrier(Thread car) {
+        Thread currentThread = Thread.currentThread();
+        if (!getAndSetParkPermit(true) && currentThread != this) {
+            int s = state();
+            if (s == PARKED && compareAndSetState(PARKED, RUNNABLE)) {
+                if (currentThread instanceof VirtualThread vthread) {
+                    Thread carrier = vthread.carrierThread;
+                    carrier.setCurrentThread(carrier);
+                    try {
+                        submitRunContinuationOnThisCarrier(car);
+                    } finally {
+                        carrier.setCurrentThread(vthread);
+                    }
+                } else {
+                    submitRunContinuationOnThisCarrier(car);
                 }
             } else if (s == PINNED) {
                 // unpark carrier thread when pinned.

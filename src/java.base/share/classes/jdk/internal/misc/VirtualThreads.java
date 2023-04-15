@@ -92,4 +92,16 @@ public final class VirtualThreads {
     public static void unpark(Thread thread) {
         JLA.unparkVirtualThread(thread);
     }
+
+    /**
+     * Re-enables a virtual thread for scheduling. If the thread was parked then
+     * it will be unblocked, otherwise its next attempt to park will not block
+     * @param thread the virtual thread to unpark
+     * @param carrier
+     * @throws IllegalArgumentException if the thread is not a virtual thread
+     * @throws RejectedExecutionException if the scheduler cannot accept a task
+     */
+    public static void unparkAndRunOnThisCarrier(Thread thread, Thread carrier) {
+        JLA.unparkVirtualAndRunOnThisCarrier(thread, carrier);
+    }
 }
