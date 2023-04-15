@@ -2620,8 +2620,7 @@ public final class System {
                 if (thread instanceof VirtualThread vthread) {
                     vthread.unparkAndRunOnThisCarrier(carrier);
                 } else {
-                    System.out.println(thread);
-                    throw new WrongThreadException();
+                    throw new WrongThreadException(thread.toString());
                 }
             }
 
