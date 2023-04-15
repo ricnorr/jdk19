@@ -58,6 +58,13 @@ public class CarrierThread extends ForkJoinWorkerThread {
         U.putReferenceRelease(this, INHERITEDACCESSCONTROLCONTEXT, INNOCUOUS_ACC);
     }
 
+    public CarrierThread(ForkJoinPool pool, Runnable runnable) {
+        super(CARRIER_THREADGROUP, pool, true, runnable);
+        U.putReference(this, CONTEXTCLASSLOADER, ClassLoader.getSystemClassLoader());
+        U.putReference(this, INHERITABLETHREADLOCALS, null);
+        U.putReferenceRelease(this, INHERITEDACCESSCONTROLCONTEXT, INNOCUOUS_ACC);
+    }
+
     /**
      * For use by {@link Blocker} to test if the thread is in a blocking operation.
      */

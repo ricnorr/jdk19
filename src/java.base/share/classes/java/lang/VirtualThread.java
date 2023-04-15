@@ -62,7 +62,8 @@ import static java.util.concurrent.TimeUnit.*;
  * A thread that is scheduled by the Java virtual machine rather than the operating
  * system.
  */
-final class VirtualThread extends BaseVirtualThread {
+public final class VirtualThread extends BaseVirtualThread {
+
     private static final Unsafe U = Unsafe.getUnsafe();
     private static final ContinuationScope VTHREAD_SCOPE = new ContinuationScope("VirtualThreads");
     private static final ForkJoinPool DEFAULT_SCHEDULER = createDefaultScheduler();
@@ -74,8 +75,14 @@ final class VirtualThread extends BaseVirtualThread {
     private static final long CARRIER_THREAD = U.objectFieldOffset(VirtualThread.class, "carrierThread");
     private static final long TERMINATION = U.objectFieldOffset(VirtualThread.class, "termination");
 
-    // scheduler and continuation
-    private final Executor scheduler;
+    /**
+     * scheduler and continuation
+     */
+    public Executor scheduler;
+
+    /** numa scheduler **/
+    public Executor[] numaScheduler;
+
     private final Continuation cont;
     private final Runnable runContinuation;
 
@@ -122,8 +129,10 @@ final class VirtualThread extends BaseVirtualThread {
     // parking permit
     private volatile boolean parkPermit;
 
-    // carrier thread when mounted, accessed by VM
-    private volatile Thread carrierThread;
+    /**
+     * carrier thread when mounted, accessed by VM
+     */
+    public volatile Thread carrierThread;
 
     // termination object when joining, created lazily if needed
     private volatile CountDownLatch termination;
@@ -247,10 +256,68 @@ final class VirtualThread extends BaseVirtualThread {
 
     /**
      * Submits the runContinuation task to the scheduler.
+     * @param {@code lazySubmit} to lazy submit
+     * @throws RejectedExecutionException
+     * @see ForkJoinPool#lazySubmit(ForkJoinTask)
+     */
+    private void submitRunContinuationOnThisCarrier(boolean lazySubmit, Thread carrierThread) {
+        try {
+            if (lazySubmit && scheduler instanceof ForkJoinPool pool) {
+                pool.lazySubmit(ForkJoinTask.adapt(runContinuation));
+            } else {
+                if (scheduler instanceof ForkJoinPool pool) {
+                    pool.runOnThisCarrier(ForkJoinTask.adapt(runContinuation), carrierThread);
+                } else {
+                    scheduler.execute(runContinuation);
+                }
+            }
+        } catch (RejectedExecutionException ree) {
+            // record event
+            var event = new VirtualThreadSubmitFailedEvent();
+            if (event.isEnabled()) {
+                event.javaThreadId = threadId();
+                event.exceptionMessage = ree.getMessage();
+                event.commit();
+            }
+            throw ree;
+        }
+    }
+
+
+    /**
+     * Submits the runContinuation task to the scheduler.
+     * @param numaId
+     * @throws RejectedExecutionException
+     */
+    private void submitRunContinuationOnNuma(int numaId) {
+        try {
+            numaScheduler[numaId].execute(runContinuation);
+        } catch (RejectedExecutionException ree) {
+            // record event
+            var event = new VirtualThreadSubmitFailedEvent();
+            if (event.isEnabled()) {
+                event.javaThreadId = threadId();
+                event.exceptionMessage = ree.getMessage();
+                event.commit();
+            }
+            throw ree;
+        }
+    }
+
+    /**
+     * Submits the runContinuation task to the scheduler.
      * @throws RejectedExecutionException
      */
     private void submitRunContinuation() {
         submitRunContinuation(false);
+    }
+
+    /**
+     * Submits the runContinuation task to the scheduler.
+     * @throws RejectedExecutionException
+     */
+    private void submitRunContinuationOnThisCarrier(Thread carrierThread) {
+        submitRunContinuationOnThisCarrier(false, carrierThread);
     }
 
     /**
@@ -629,6 +696,80 @@ final class VirtualThread extends BaseVirtualThread {
                     carrier.setCurrentThread(carrier);
                     try {
                         submitRunContinuation();
+                    } finally {
+                        carrier.setCurrentThread(vthread);
+                    }
+                } else {
+                    submitRunContinuation();
+                }
+            } else if (s == PINNED) {
+                // unpark carrier thread when pinned.
+                synchronized (carrierThreadAccessLock()) {
+                    Thread carrier = carrierThread;
+                    if (carrier != null && state() == PINNED) {
+                        U.unpark(carrier);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Re-enables this virtual thread for scheduling. If the virtual thread was
+     * {@link #park() parked} then it will be unblocked, otherwise its next call
+     * to {@code park} or {@linkplain #parkNanos(long) parkNanos} is guaranteed
+     * not to block.
+     * @throws RejectedExecutionException if the scheduler cannot accept a task
+     */
+    @ChangesCurrentThread
+    void unparkAndRunOnThisCarrier(Thread car) {
+        Thread currentThread = Thread.currentThread();
+        if (!getAndSetParkPermit(true) && currentThread != this) {
+            int s = state();
+            if (s == PARKED && compareAndSetState(PARKED, RUNNABLE)) {
+                if (currentThread instanceof VirtualThread vthread) {
+                    Thread carrier = vthread.carrierThread;
+                    carrier.setCurrentThread(carrier);
+                    try {
+                        submitRunContinuationOnThisCarrier(car);
+                    } finally {
+                        carrier.setCurrentThread(vthread);
+                    }
+                } else {
+                    submitRunContinuationOnThisCarrier(car);
+                }
+            } else if (s == PINNED) {
+                // unpark carrier thread when pinned.
+                synchronized (carrierThreadAccessLock()) {
+                    Thread carrier = carrierThread;
+                    if (carrier != null && state() == PINNED) {
+                        U.unpark(carrier);
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * Re-enables this virtual thread for scheduling. If the virtual thread was
+     * {@link #park() parked} then it will be unblocked, otherwise its next call
+     * to {@code park} or {@linkplain #parkNanos(long) parkNanos} is guaranteed
+     * not to block.
+     * @param numaId
+     * @throws RejectedExecutionException if the scheduler cannot accept a task
+     */
+    @ChangesCurrentThread
+    void unparkAndRunOnNuma(int numaId) {
+        Thread currentThread = Thread.currentThread();
+        if (!getAndSetParkPermit(true) && currentThread != this) {
+            int s = state();
+            if (s == PARKED && compareAndSetState(PARKED, RUNNABLE)) {
+                if (currentThread instanceof VirtualThread vthread) {
+                    Thread carrier = vthread.carrierThread;
+                    carrier.setCurrentThread(carrier);
+                    try {
+                        submitRunContinuationOnNuma(numaId);
                     } finally {
                         carrier.setCurrentThread(vthread);
                     }
@@ -1044,6 +1185,40 @@ final class VirtualThread extends BaseVirtualThread {
             boolean asyncMode = true; // FIFO
             return new ForkJoinPool(parallelism, factory, handler, asyncMode,
                          0, maxPoolSize, minRunnable, pool -> true, 30, SECONDS);
+        };
+        return AccessController.doPrivileged(pa);
+    }
+
+    /**
+     * Creates the default scheduler.
+     * @param runnable runnable for thread
+     * @param parallelism fdfsdfsd
+     * @return kek
+     */
+    @SuppressWarnings("removal")
+    public static ForkJoinPool createDefaultScheduler2(Runnable runnable, int parallelism) {
+        ForkJoinWorkerThreadFactory factory = pool -> {
+            PrivilegedAction<ForkJoinWorkerThread> pa = () -> new CarrierThread(pool, runnable);
+            return AccessController.doPrivileged(pa);
+        };
+        PrivilegedAction<ForkJoinPool> pa = () -> {
+            int maxPoolSize, minRunnable;
+            String maxPoolSizeValue = System.getProperty("jdk.virtualThreadScheduler.maxPoolSize");
+            String minRunnableValue = System.getProperty("jdk.virtualThreadScheduler.minRunnable");
+            if (maxPoolSizeValue != null) {
+                maxPoolSize = Integer.parseInt(maxPoolSizeValue);
+            } else {
+                maxPoolSize = Integer.max(parallelism, 256);
+            }
+            if (minRunnableValue != null) {
+                minRunnable = Integer.parseInt(minRunnableValue);
+            } else {
+                minRunnable = Integer.max(parallelism / 2, 1);
+            }
+            Thread.UncaughtExceptionHandler handler = (t, e) -> { };
+            boolean asyncMode = true; // FIFO
+            return new ForkJoinPool(parallelism, factory, handler, asyncMode,
+                0, maxPoolSize, minRunnable, pool -> true, 30, SECONDS);
         };
         return AccessController.doPrivileged(pa);
     }

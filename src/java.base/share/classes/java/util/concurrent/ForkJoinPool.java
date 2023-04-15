@@ -1162,6 +1162,12 @@ public class ForkJoinPool extends AbstractExecutorService {
          * @param fifo nonzero if FIFO mode
          */
         final ForkJoinTask<?> nextLocalTask(int fifo) {
+            ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)Thread.currentThread();
+            if (workerThread.taskToRunNext != null) {
+              ForkJoinTask<?> res = workerThread.taskToRunNext;
+              workerThread.taskToRunNext = null;
+              return res;
+            }
             ForkJoinTask<?> t = null;
             ForkJoinTask<?>[] a = array;
             int p = top, s = p - 1, b = base, nb, cap;
@@ -2830,6 +2836,25 @@ public class ForkJoinPool extends AbstractExecutorService {
     public void execute(ForkJoinTask<?> task) {
         poolSubmit(true, task);
     }
+
+  /**
+   * Arranges for (asynchronous) execution of the given task.
+   *
+   * @param task the task
+   * @param carrier carrier
+   * @throws NullPointerException if the task is null
+   * @throws RejectedExecutionException if the task cannot be
+   *         scheduled for execution
+   */
+  public void runOnThisCarrier(ForkJoinTask<?> task, Thread carrier) {
+    ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)carrier;
+    if (workerThread.taskToRunNext != null) {
+      throw new IllegalStateException("taskToRunNext i not null");
+    }
+    workerThread.taskToRunNext = task;
+  }
+
+
 
     // AbstractExecutorService methods
 
