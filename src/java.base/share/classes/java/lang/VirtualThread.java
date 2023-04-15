@@ -258,8 +258,9 @@ final class VirtualThread extends BaseVirtualThread {
             } else {
                 if (scheduler instanceof ForkJoinPool pool) {
                     pool.runOnThisCarrier(ForkJoinTask.adapt(runContinuation), carrierThread);
+                } else {
+                    scheduler.execute(runContinuation);
                 }
-                scheduler.execute(runContinuation);
             }
         } catch (RejectedExecutionException ree) {
             // record event
