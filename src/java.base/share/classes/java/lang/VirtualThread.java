@@ -62,7 +62,7 @@ import static java.util.concurrent.TimeUnit.*;
  * A thread that is scheduled by the Java virtual machine rather than the operating
  * system.
  */
-final class VirtualThread extends BaseVirtualThread {
+public final class VirtualThread extends BaseVirtualThread {
     private static final Unsafe U = Unsafe.getUnsafe();
     private static final ContinuationScope VTHREAD_SCOPE = new ContinuationScope("VirtualThreads");
     private static final ForkJoinPool DEFAULT_SCHEDULER = createDefaultScheduler();
@@ -122,8 +122,10 @@ final class VirtualThread extends BaseVirtualThread {
     // parking permit
     private volatile boolean parkPermit;
 
-    // carrier thread when mounted, accessed by VM
-    private volatile Thread carrierThread;
+    /**
+     * carrier thread when mounted, accessed by VM
+     */
+    public volatile Thread carrierThread;
 
     // termination object when joining, created lazily if needed
     private volatile CountDownLatch termination;
