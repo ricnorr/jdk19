@@ -75,8 +75,10 @@ public final class VirtualThread extends BaseVirtualThread {
     private static final long CARRIER_THREAD = U.objectFieldOffset(VirtualThread.class, "carrierThread");
     private static final long TERMINATION = U.objectFieldOffset(VirtualThread.class, "termination");
 
-    // scheduler and continuation
-    private final Executor scheduler;
+    /**
+     * scheduler and continuation
+     */
+    public Executor scheduler;
 
     /** numa scheduler **/
     public Executor[] numaScheduler;
