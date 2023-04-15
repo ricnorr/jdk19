@@ -632,12 +632,12 @@ public abstract class AbstractQueuedSynchronizer
      * eligible thread when one or more have been cancelled, but
      * cancelAcquire ensures liveness.
      */
-    private static void signalNext(Node h, boolean numaMode) {
+    private static void signalNext(Node h, boolean numaMode, int numaNodeNumber) {
         Node s;
         if (h != null && (s = h.next) != null && s.status != 0) {
             s.getAndUnsetStatus(WAITING);
             if (numaMode) {
-                LockSupport.unparkAndRunOnNuma(node.waiter, numaNodeNumber);
+                LockSupport.unparkAndRunOnNuma(s.waiter, numaNodeNumber);
 //                LockSupport.unparkNextAndYieldThis(s.waiter, ((VirtualThread)Thread.currentThread()).carrierThread);
             } else {
                 LockSupport.unpark(s.waiter);
@@ -646,13 +646,13 @@ public abstract class AbstractQueuedSynchronizer
     }
 
     /** Wakes up the given node if in shared mode */
-    private static void signalNextIfShared(Node h, boolean numaMode) {
+    private static void signalNextIfShared(Node h, boolean numaMode, int numaNodeNumber) {
         Node s;
         if (h != null && (s = h.next) != null &&
             (s instanceof SharedNode) && s.status != 0) {
             s.getAndUnsetStatus(WAITING);
             if (numaMode) {
-                LockSupport.unparkAndRunOnNuma(node.waiter, numaNodeNumber);
+                LockSupport.unparkAndRunOnNuma(s.waiter, numaNodeNumber);
                 // LockSupport.unparkNextAndYieldThis(s.waiter, ((VirtualThread)Thread.currentThread()).carrierThread);
             } else {
                 LockSupport.unpark(s.waiter);
@@ -719,7 +719,7 @@ public abstract class AbstractQueuedSynchronizer
                         pred.next = null;
                         node.waiter = null;
                         if (shared)
-                            signalNextIfShared(node, numaMode);
+                            signalNextIfShared(node, numaMode, numaNodeNumber);
                         if (interrupted)
                             current.interrupt();
                     }
@@ -780,7 +780,7 @@ public abstract class AbstractQueuedSynchronizer
                         q.prev == p) {
                         p.casNext(q, s);         // OK if fails
                         if (p.prev == null)
-                            signalNext(p, numaMode);
+                            signalNext(p, numaMode, numaNodeNumber);
                     }
                     break;
                 }
@@ -788,7 +788,7 @@ public abstract class AbstractQueuedSynchronizer
                     if (n != null && q.prev == p) {
                         p.casNext(n, q);
                         if (p.prev == null)
-                            signalNext(p, numaMode);
+                            signalNext(p, numaMode, numaNodeNumber);
                     }
                     break;
                 }
@@ -1043,7 +1043,7 @@ public abstract class AbstractQueuedSynchronizer
      */
     public final boolean release(int arg) {
         if (tryRelease(arg)) {
-            signalNext(head, numaMode);
+            signalNext(head, numaMode, numaNodeNumber);
             return true;
         }
         return false;
@@ -1130,7 +1130,7 @@ public abstract class AbstractQueuedSynchronizer
      */
     public final boolean releaseShared(int arg) {
         if (tryReleaseShared(arg)) {
-            signalNext(head, numaMode);
+            signalNext(head, numaMode, numaNodeNumber);
             return true;
         }
         return false;
