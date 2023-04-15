@@ -637,7 +637,8 @@ public abstract class AbstractQueuedSynchronizer
         if (h != null && (s = h.next) != null && s.status != 0) {
             s.getAndUnsetStatus(WAITING);
             if (numaMode) {
-                LockSupport.unparkNextAndYieldThis(s.waiter, ((VirtualThread)Thread.currentThread()).carrierThread);
+                LockSupport.unparkAndRunOnNuma(node.waiter, numaNodeNumber);
+//                LockSupport.unparkNextAndYieldThis(s.waiter, ((VirtualThread)Thread.currentThread()).carrierThread);
             } else {
                 LockSupport.unpark(s.waiter);
             }
@@ -651,7 +652,8 @@ public abstract class AbstractQueuedSynchronizer
             (s instanceof SharedNode) && s.status != 0) {
             s.getAndUnsetStatus(WAITING);
             if (numaMode) {
-                LockSupport.unparkNextAndYieldThis(s.waiter, ((VirtualThread)Thread.currentThread()).carrierThread);
+                LockSupport.unparkAndRunOnNuma(node.waiter, numaNodeNumber);
+                // LockSupport.unparkNextAndYieldThis(s.waiter, ((VirtualThread)Thread.currentThread()).carrierThread);
             } else {
                 LockSupport.unpark(s.waiter);
             }
