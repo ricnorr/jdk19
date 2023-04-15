@@ -207,6 +207,28 @@ public class LockSupport {
     }
 
     /**
+     * Makes available the permit for the given thread, if it
+     * was not already available.  If the thread was blocked on
+     * {@code park} then it will unblock.  Otherwise, its next call
+     * to {@code park} is guaranteed not to block. This operation
+     * is not guaranteed to have any effect at all if the given
+     * thread has not been started.
+     *
+     * @param thread the thread to unpark, or {@code null}, in which case
+     *        this operation has no effect
+     * @param numaId numaId
+     */
+    public static void unparkAndRunOnNuma(Thread thread, int numaId) {
+        if (thread != null) {
+            if (thread.isVirtual()) {
+                VirtualThreads.unparkAndRunOnNuma(thread, numaId);
+            } else {
+                U.unpark(thread);
+            }
+        }
+    }
+
+    /**
      * Disables the current thread for thread scheduling purposes unless the
      * permit is available.
      *

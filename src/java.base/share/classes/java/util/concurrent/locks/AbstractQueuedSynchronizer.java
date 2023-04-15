@@ -313,6 +313,11 @@ public abstract class AbstractQueuedSynchronizer
     private boolean numaMode = false;
 
     /**
+     * numanode number
+     */
+    private int numaNodeNumber = -1;
+
+    /**
      * Creates a new {@code AbstractQueuedSynchronizer} instance
      * with initial synchronization state of zero.
      */
@@ -322,9 +327,11 @@ public abstract class AbstractQueuedSynchronizer
      * Creates a new {@code AbstractQueuedSynchronizer} instance
      * with initial synchronization state of zero.
      * @param numaMode numaMode
+     * @param numaNodeNumber numaNodeNumber
      */
-    protected AbstractQueuedSynchronizer(boolean numaMode) {
+    protected AbstractQueuedSynchronizer(boolean numaMode, int numaNodeNumber) {
         this.numaMode = numaMode;
+        this.numaNodeNumber = numaNodeNumber;
     }
 
 
@@ -599,7 +606,8 @@ public abstract class AbstractQueuedSynchronizer
                     t.next = node;
                     if (t.status < 0) {         // wake up to clean link
                         if (numaMode) {
-                            LockSupport.unparkNextAndYieldThis(node.waiter, ((VirtualThread)Thread.currentThread()).carrierThread);
+                            LockSupport.unparkAndRunOnNuma(node.waiter, numaNodeNumber);
+//                            LockSupport.unparkNextAndYieldThis(node.waiter, ((VirtualThread)Thread.currentThread()).carrierThread);
                         } else {
                             LockSupport.unpark(node.waiter);
                         }

@@ -530,7 +530,17 @@ public interface JavaLangAccess {
      */
     void unparkVirtualAndRunOnThisCarrier(Thread thread, Thread carrier);
 
-        /**
+    /**
+     * Re-enables a virtual thread for scheduling. If the thread was parked then
+     * it will be unblocked, otherwise its next attempt to park will not block
+     * @param thread the virtual thread to unpark
+     * @param numaId the virtual thread to unpark
+     * @throws IllegalArgumentException if the thread is not a virtual thread
+     * @throws RejectedExecutionException if the scheduler cannot accept a task
+     */
+    void unparkVirtualAndRunOnNuma(Thread thread, int numaId);
+
+    /**
          * Creates a new StackWalker
          */
     StackWalker newStackWalkerInstance(Set<StackWalker.Option> options,

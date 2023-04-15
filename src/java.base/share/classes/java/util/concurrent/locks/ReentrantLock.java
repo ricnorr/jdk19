@@ -121,8 +121,8 @@ public class ReentrantLock implements Lock, java.io.Serializable {
     abstract static class Sync extends AbstractQueuedSynchronizer {
         private static final long serialVersionUID = -5179523762034025860L;
 
-        public Sync(boolean numaMode) {
-            super(numaMode);
+        public Sync(boolean numaMode, int numaNodeNumber) {
+            super(numaMode, numaNodeNumber);
         }
 
         public Sync() {
@@ -231,8 +231,8 @@ public class ReentrantLock implements Lock, java.io.Serializable {
     static final class NonfairSync extends Sync {
         private static final long serialVersionUID = 7316153563782823691L;
 
-        public NonfairSync(boolean numaMode) {
-            super(numaMode);
+        public NonfairSync(boolean numaMode, int numaNodeNumber) {
+            super(numaMode, numaNodeNumber);
         }
 
         public NonfairSync() {
@@ -272,8 +272,8 @@ public class ReentrantLock implements Lock, java.io.Serializable {
     static final class FairSync extends Sync {
         private static final long serialVersionUID = -3000897897090466540L;
 
-        public FairSync(boolean numaMode) {
-            super(numaMode);
+        public FairSync(boolean numaMode, int numaNodeNumber) {
+            super(numaMode, numaNodeNumber);
         }
 
         public FairSync() {
@@ -337,9 +337,10 @@ public class ReentrantLock implements Lock, java.io.Serializable {
      *
      * @param fair {@code true} if this lock should use a fair ordering policy
      * @param numaMode aboba
+     * @param numaNodeNumber aboba
      */
-    public ReentrantLock(boolean fair, boolean numaMode) {
-        sync = fair ? new FairSync(numaMode) : new NonfairSync(numaMode);
+    public ReentrantLock(boolean fair, boolean numaMode, int numaNodeNumber) {
+        sync = fair ? new FairSync(numaMode, numaNodeNumber) : new NonfairSync(numaMode, numaNodeNumber);
     }
 
     /**

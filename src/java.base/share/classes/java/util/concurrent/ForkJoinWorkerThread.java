@@ -70,6 +70,8 @@ public class ForkJoinWorkerThread extends Thread {
 
     volatile ForkJoinTask<?> taskToRunNext; // task to run next
 
+    Runnable runWhenStart = null; // run when start
+
     /**
      * Full nonpublic constructor.
      */
@@ -108,6 +110,27 @@ public class ForkJoinWorkerThread extends Thread {
     }
 
     /**
+     * Creates a ForkJoinWorkerThread operating in the given thread group and
+     * pool, and with the given policy for preserving ThreadLocals.
+     *
+     * @param group if non-null, the thread group for this
+     * thread. Otherwise, the thread group is chosen by the security
+     * manager if present, else set to the current thread's thread
+     * group.
+     * @param pool the pool this thread works in
+     * @param preserveThreadLocals if true, always preserve the values of
+     * ThreadLocal variables across tasks; otherwise they may be cleared.
+     * @param runnable fdsfdfd
+     * @throws NullPointerException if pool is null
+     * @since 19
+     */
+    protected ForkJoinWorkerThread(ThreadGroup group, ForkJoinPool pool,
+                                   boolean preserveThreadLocals, Runnable runnable) {
+        this(group, pool, false, !preserveThreadLocals);
+        this.runWhenStart = runnable;
+    }
+
+    /**
      * Creates a ForkJoinWorkerThread operating in the given pool.
      *
      * @param pool the pool this thread works in
@@ -115,6 +138,18 @@ public class ForkJoinWorkerThread extends Thread {
      */
     protected ForkJoinWorkerThread(ForkJoinPool pool) {
         this(null, pool, false, false);
+    }
+
+    /**
+     * Creates a ForkJoinWorkerThread operating in the given pool.
+     *
+     * @param pool the pool this thread works in
+     * @param runOnStart fdsfdsfds
+     * @throws NullPointerException if pool is null
+     */
+    protected ForkJoinWorkerThread(ForkJoinPool pool, Runnable runOnStart) {
+        this(null, pool, false, false);
+        this.runWhenStart = runOnStart;
     }
 
     /**
@@ -172,6 +207,9 @@ public class ForkJoinWorkerThread extends Thread {
         Throwable exception = null;
         ForkJoinPool p = pool;
         ForkJoinPool.WorkQueue w = workQueue;
+        if (runWhenStart != null) {
+            runWhenStart.run();
+        }
         if (p != null && w != null) {   // skip on failed initialization
             try {
                 p.registerWorker(w);
