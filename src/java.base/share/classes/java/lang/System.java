@@ -2616,6 +2616,14 @@ public final class System {
                 }
             }
 
+            public void unparkVirtualAndRunOnThisCarrier(Thread thread, Thread carrier) {
+                if (thread instanceof VirtualThread vthread) {
+                    vthread.unparkAndRunOnThisCarrier(carrier);
+                } else {
+                    throw new WrongThreadException();
+                }
+            }
+
             public StackWalker newStackWalkerInstance(Set<StackWalker.Option> options,
                                                       ContinuationScope contScope,
                                                       Continuation continuation) {
