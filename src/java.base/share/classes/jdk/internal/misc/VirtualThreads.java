@@ -92,4 +92,14 @@ public final class VirtualThreads {
     public static void unpark(Thread thread) {
         JLA.unparkVirtualThread(thread);
     }
+
+    /**
+     * Unpark virtual thread and run on the carrier thread.
+     * Yield current virtual thread.
+     * @param thread virtual thread to unpark
+     * @param carrier hardware thread to run virtual thread
+     */
+    public static void unparkAndRunOnThisCarrier(Thread thread, Thread carrier) {
+        JLA.unparkVirtualAndRunOnThisCarrier(thread, carrier);
+    }
 }

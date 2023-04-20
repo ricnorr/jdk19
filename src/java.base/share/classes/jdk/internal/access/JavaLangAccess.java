@@ -521,6 +521,14 @@ public interface JavaLangAccess {
     void unparkVirtualThread(Thread thread);
 
     /**
+     * Unpark virtual thread and run on the carrier thread.
+     * Yield current virtual thread.
+     * @param thread virtual thread to unpark
+     * @param carrier hardware thread to run virtual thread
+     */
+    void unparkVirtualAndRunOnThisCarrier(Thread thread, Thread carrier);
+
+    /**
      * Creates a new StackWalker
      */
     StackWalker newStackWalkerInstance(Set<StackWalker.Option> options,

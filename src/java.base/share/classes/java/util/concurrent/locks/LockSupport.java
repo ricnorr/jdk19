@@ -184,6 +184,21 @@ public class LockSupport {
     }
 
     /**
+     * unpark virtual thread and runs it on the current carrier
+     * @param thread to unpark
+     * @param carrier platform carrier thread
+     */
+    public static void unparkNextAndRunOnTheCarrier(Thread thread, Thread carrier) {
+        if (thread != null) {
+            assert(Thread.currentThread().isVirtual());
+            assert(thread.isVirtual());
+            assert(!carrier.isVirtual());
+            VirtualThreads.unparkAndRunOnThisCarrier(thread, carrier);
+            Thread.yield();
+        }
+    }
+
+    /**
      * Disables the current thread for thread scheduling purposes unless the
      * permit is available.
      *
