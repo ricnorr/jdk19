@@ -1167,7 +1167,7 @@ public class ForkJoinPool extends AbstractExecutorService {
             if (res != null) {
               return res;
             }
-            System.out.println("No task found");
+            System.out.println("No fast task found");
             ForkJoinTask<?> t = null;
             ForkJoinTask<?>[] a = array;
             int p = top, s = p - 1, b = base, nb, cap;
@@ -1191,7 +1191,11 @@ public class ForkJoinPool extends AbstractExecutorService {
                 } while (p - b > 0);
                 U.storeStoreFence(); // for timely index updates
             }
-            System.out.println("Found task: " + t.toString());
+            if (t == null) {
+              System.out.println("No task");
+            } else {
+              System.out.println("Task: " + t.toString());
+            }
             return t;
         }
 
