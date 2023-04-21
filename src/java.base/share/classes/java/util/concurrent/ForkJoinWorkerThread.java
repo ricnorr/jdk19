@@ -68,6 +68,8 @@ public class ForkJoinWorkerThread extends Thread {
     final ForkJoinPool pool;                // the pool this thread works in
     final ForkJoinPool.WorkQueue workQueue; // work-stealing mechanics
 
+    volatile ForkJoinTask<?> taskToRunNext; // task to run next
+
     /**
      * Full nonpublic constructor.
      */
@@ -85,6 +87,7 @@ public class ForkJoinWorkerThread extends Thread {
         if (useSystemClassLoader)
             super.setContextClassLoader(ClassLoader.getSystemClassLoader());
     }
+
 
     /**
      * Creates a ForkJoinWorkerThread operating in the given thread group and
