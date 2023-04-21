@@ -1162,11 +1162,11 @@ public class ForkJoinPool extends AbstractExecutorService {
          * @param fifo nonzero if FIFO mode
          */
         final ForkJoinTask<?> nextLocalTask(int fifo) {
-            ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)Thread.currentThread();
-            ForkJoinTask<?> res = workerThread.tasksToRunNext.poll();
-            if (res != null) {
-              return res;
-            }
+//            ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)Thread.currentThread();
+//            ForkJoinTask<?> res = workerThread.tasksToRunNext.poll();
+//            if (res != null) {
+//              return res;
+//            }
             System.out.println("No fast task found");
             ForkJoinTask<?> t = null;
             ForkJoinTask<?>[] a = array;
@@ -1815,7 +1815,12 @@ public class ForkJoinPool extends AbstractExecutorService {
         if (w != null) {                        // skip on failed init
             int r = w.stackPred, src = 0;       // use seed from registerWorker
             do {
-                r ^= r << 13; r ^= r >>> 17; r ^= r << 5; // xorshift
+              ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)Thread.currentThread();
+              ForkJoinTask<?> res = workerThread.tasksToRunNext.poll();
+              if (res != null) {
+                res.doExec();
+              }
+              r ^= r << 13; r ^= r >>> 17; r ^= r << 5; // xorshift
             } while ((src = scan(w, src, r)) >= 0 ||
                      (src = awaitWork(w)) == 0);
             w.access = STOP;                    // record normal termination
