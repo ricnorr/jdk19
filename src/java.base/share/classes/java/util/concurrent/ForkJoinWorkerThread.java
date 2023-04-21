@@ -178,7 +178,7 @@ public class ForkJoinWorkerThread extends Thread {
                 p.registerWorker(w);
                 onStart();
                 p.runWorker(w);
-                System.out.println("Worker ends!");
+//                System.out.println("Worker ends!");
             } catch (Throwable ex) {
                 exception = ex;
             } finally {

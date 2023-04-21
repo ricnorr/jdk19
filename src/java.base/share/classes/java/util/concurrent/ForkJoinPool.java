@@ -1818,9 +1818,9 @@ public class ForkJoinPool extends AbstractExecutorService {
               ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)Thread.currentThread();
               ForkJoinTask<?> res = workerThread.tasksToRunNext.poll();
               if (res != null) {
-                System.out.println("Start task: " + res.toString());
+//                System.out.println("Start task: " + res.toString());
                 res.doExec();
-                System.out.println("End task: " + res.toString());
+//                System.out.println("End task: " + res.toString());
                 continue;
               }
               r ^= r << 13; r ^= r >>> 17; r ^= r << 5; // xorshift
@@ -1829,9 +1829,9 @@ public class ForkJoinPool extends AbstractExecutorService {
               }
               res = workerThread.tasksToRunNext.poll();
               if (res != null) {
-                System.out.println("Start task: " + res.toString());
+//                System.out.println("Start task: " + res.toString());
                 res.doExec();
-                System.out.println("End task: " + res.toString());
+//                System.out.println("End task: " + res.toString());
                 continue;
               }
               if ((src = awaitWork(w)) == 0) {
@@ -1839,9 +1839,9 @@ public class ForkJoinPool extends AbstractExecutorService {
               }
               res = workerThread.tasksToRunNext.poll();
               if (res != null) {
-                System.out.println("Start task: " + res.toString());
+//                System.out.println("Start task: " + res.toString());
                 res.doExec();
-                System.out.println("End task: " + res.toString());
+//                System.out.println("End task: " + res.toString());
                 continue;
               }
               break;
