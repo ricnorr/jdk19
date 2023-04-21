@@ -230,7 +230,9 @@ final class VirtualThread extends BaseVirtualThread {
     private void submitRunContinuation(boolean lazySubmit) {
         try {
             if (lazySubmit && scheduler instanceof ForkJoinPool pool) {
+                System.out.println("submit lazy");
                 pool.lazySubmit(ForkJoinTask.adapt(runContinuation));
+                System.out.println("submittеd lazy");
             } else {
                 System.out.println("Try to submit task");
                 scheduler.execute(runContinuation);
