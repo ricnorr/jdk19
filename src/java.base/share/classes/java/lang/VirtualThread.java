@@ -215,6 +215,7 @@ final class VirtualThread extends BaseVirtualThread {
             if (cont.isDone()) {
                 afterTerminate(/*executed*/ true);
             } else {
+                System.out.println("AfterYield thread");
                 afterYield();
             }
         }
@@ -653,16 +654,12 @@ final class VirtualThread extends BaseVirtualThread {
      * @throws RejectedExecutionException
      * @see ForkJoinPool#lazySubmit(ForkJoinTask)
      */
-    private void submitRunContinuationOnThisCarrier(boolean lazySubmit, Thread carrierThread) {
+    private void submitRunContinuationOnThisCarrier(Thread carrierThread) {
         try {
-            if (lazySubmit && scheduler instanceof ForkJoinPool pool) {
-                pool.lazySubmit(ForkJoinTask.adapt(runContinuation));
+            if (scheduler instanceof ForkJoinPool pool) {
+                pool.runOnThisCarrier(ForkJoinTask.adapt(runContinuation), carrierThread);
             } else {
-                if (scheduler instanceof ForkJoinPool pool) {
-                    pool.runOnThisCarrier(ForkJoinTask.adapt(runContinuation), carrierThread);
-                } else {
-                    scheduler.execute(runContinuation);
-                }
+                scheduler.execute(runContinuation);
             }
         } catch (RejectedExecutionException ree) {
             // record event
@@ -676,13 +673,6 @@ final class VirtualThread extends BaseVirtualThread {
         }
     }
 
-    /**
-     * Submits the runContinuation task to the scheduler.
-     * @throws RejectedExecutionException
-     */
-    private void submitRunContinuationOnThisCarrier(Thread carrierThread) {
-        submitRunContinuationOnThisCarrier(false, carrierThread);
-    }
 
     /**
      * Re-enables this virtual thread for scheduling. If the virtual thread was
@@ -706,7 +696,7 @@ final class VirtualThread extends BaseVirtualThread {
                         carrier.setCurrentThread(vthread);
                     }
                 } else {
-                    submitRunContinuationOnThisCarrier(car);
+                    throw new IllegalStateException("Expected virtual thread");
                 }
             } else if (s == PINNED) {
                 // unpark carrier thread when pinned.
@@ -727,6 +717,7 @@ final class VirtualThread extends BaseVirtualThread {
         assert Thread.currentThread() == this;
         setState(YIELDING);
         try {
+            System.out.println("Yield thread");
             yieldContinuation();
         } finally {
             assert Thread.currentThread() == this;
