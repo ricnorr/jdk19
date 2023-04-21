@@ -199,6 +199,24 @@ public class LockSupport {
     }
 
     /**
+     * Mark that virtual thread enters the critical section
+     * @param thread thread
+     */
+    public static void markCriticalSectionStart(Thread thread) {
+        assert(Thread.currentThread().isVirtual());
+        VirtualThreads.markCriticalSectionStart(thread);
+    }
+
+    /**
+     * Mark that virtual thread leaves the critical section
+     * @param thread thread
+     */
+    public static void markCriticalSectionEnd(Thread thread) {
+        assert(Thread.currentThread().isVirtual());
+        VirtualThreads.markCriticalSectionEnd(thread);
+    }
+
+    /**
      * Disables the current thread for thread scheduling purposes unless the
      * permit is available.
      *

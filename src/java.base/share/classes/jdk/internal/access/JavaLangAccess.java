@@ -529,8 +529,20 @@ public interface JavaLangAccess {
     void unparkVirtualAndRunOnThisCarrier(Thread thread, Thread carrier);
 
     /**
-     * Creates a new StackWalker
+     * Mark virtual thread enters critical section
+     * @param thread
      */
+    void markCriticalSectionStart(Thread thread);
+
+    /**
+     * Mark virtual thread leaves critical section
+     * @param thread
+     */
+    void markCriticalSectionEnd(Thread thread);
+
+        /**
+         * Creates a new StackWalker
+         */
     StackWalker newStackWalkerInstance(Set<StackWalker.Option> options,
                                        ContinuationScope contScope,
                                        Continuation continuation);

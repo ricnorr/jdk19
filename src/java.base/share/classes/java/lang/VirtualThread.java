@@ -82,6 +82,8 @@ final class VirtualThread extends BaseVirtualThread {
     // virtual thread state, accessed by VM
     private volatile int state;
 
+    private volatile boolean isInCriticalSection; // is thread in critical section
+
     /*
      * Virtual thread state and transitions:
      *
@@ -215,7 +217,6 @@ final class VirtualThread extends BaseVirtualThread {
             if (cont.isDone()) {
                 afterTerminate(/*executed*/ true);
             } else {
-//                System.out.println("AfterYield thread");
                 afterYield();
             }
         }
@@ -228,15 +229,15 @@ final class VirtualThread extends BaseVirtualThread {
      * @see ForkJoinPool#lazySubmit(ForkJoinTask)
      */
     private void submitRunContinuation(boolean lazySubmit) {
+        if (isInCriticalSection) { // when yield in critical section
+            submitRunContinuationOnThisCarrier(Thread.currentCarrierThread());
+            return;
+        }
         try {
             if (lazySubmit && scheduler instanceof ForkJoinPool pool) {
-//                System.out.println("submit lazy");
                 pool.lazySubmit(ForkJoinTask.adapt(runContinuation));
-//                System.out.println("submited lazy");
             } else {
-//                System.out.println("Try to submit task");
                 scheduler.execute(runContinuation);
-//                System.out.println("Task submitted");
             }
         } catch (RejectedExecutionException ree) {
             // record event
@@ -401,7 +402,6 @@ final class VirtualThread extends BaseVirtualThread {
                 lazySubmitRunContinuation();
             }
         } else if (s == YIELDING) {   // Thread.yield
-//            System.out.println("YIELDING");
             setState(RUNNABLE);
 
             // notify JVMTI that unmount has completed, thread is runnable
@@ -716,13 +716,26 @@ final class VirtualThread extends BaseVirtualThread {
     }
 
     /**
+     * Mark virtual thread enters critical section
+     */
+    void markCriticalSectionStart() {
+        isInCriticalSection = true;
+    }
+
+    /**
+     * Mark virtual thread leaves critical section
+     */
+    void markCriticalSectionEnd() {
+        isInCriticalSection = false;
+    }
+
+    /**
      * Attempts to yield the current virtual thread (Thread.yield).
      */
     void tryYield() {
         assert Thread.currentThread() == this;
         setState(YIELDING);
         try {
-//            System.out.println("Yield thread");
             yieldContinuation();
         } finally {
             assert Thread.currentThread() == this;
