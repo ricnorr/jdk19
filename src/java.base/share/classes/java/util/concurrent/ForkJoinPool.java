@@ -1814,15 +1814,27 @@ public class ForkJoinPool extends AbstractExecutorService {
     final void runWorker(WorkQueue w) {
         if (w != null) {                        // skip on failed init
             int r = w.stackPred, src = 0;       // use seed from registerWorker
-            do {
+            while (true) {
               ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)Thread.currentThread();
               ForkJoinTask<?> res = workerThread.tasksToRunNext.poll();
               if (res != null) {
                 res.doExec();
+                continue;
               }
               r ^= r << 13; r ^= r >>> 17; r ^= r << 5; // xorshift
-            } while ((src = scan(w, src, r)) >= 0 ||
-                     (src = awaitWork(w)) == 0);
+              if ((src = scan(w, src, r)) >= 0) {
+                continue;
+              }
+              res = workerThread.tasksToRunNext.poll();
+              if (res != null) {
+                res.doExec();
+                continue;
+              }
+              if ((src = awaitWork(w)) == 0) {
+                continue;
+              }
+              break;
+            }
             w.access = STOP;                    // record normal termination
         }
     }
