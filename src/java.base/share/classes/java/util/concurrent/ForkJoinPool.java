@@ -1167,7 +1167,7 @@ public class ForkJoinPool extends AbstractExecutorService {
 //            if (res != null) {
 //              return res;
 //            }
-            System.out.println("No fast task found");
+//            System.out.println("No fast task found");
             ForkJoinTask<?> t = null;
             ForkJoinTask<?>[] a = array;
             int p = top, s = p - 1, b = base, nb, cap;
@@ -1192,9 +1192,9 @@ public class ForkJoinPool extends AbstractExecutorService {
                 U.storeStoreFence(); // for timely index updates
             }
             if (t == null) {
-              System.out.println("No task");
+//              System.out.println("No task");
             } else {
-              System.out.println("Task: " + t.toString());
+//              System.out.println("Task: " + t.toString());
             }
             return t;
         }
@@ -1818,7 +1818,9 @@ public class ForkJoinPool extends AbstractExecutorService {
               ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)Thread.currentThread();
               ForkJoinTask<?> res = workerThread.tasksToRunNext.poll();
               if (res != null) {
+                System.out.println("Start task: " + res.toString());
                 res.doExec();
+                System.out.println("End task: " + res.toString());
                 continue;
               }
               r ^= r << 13; r ^= r >>> 17; r ^= r << 5; // xorshift
@@ -1827,7 +1829,9 @@ public class ForkJoinPool extends AbstractExecutorService {
               }
               res = workerThread.tasksToRunNext.poll();
               if (res != null) {
+                System.out.println("Start task: " + res.toString());
                 res.doExec();
+                System.out.println("End task: " + res.toString());
                 continue;
               }
               if ((src = awaitWork(w)) == 0) {
@@ -1835,7 +1839,9 @@ public class ForkJoinPool extends AbstractExecutorService {
               }
               res = workerThread.tasksToRunNext.poll();
               if (res != null) {
+                System.out.println("Start task: " + res.toString());
                 res.doExec();
+                System.out.println("End task: " + res.toString());
                 continue;
               }
               break;

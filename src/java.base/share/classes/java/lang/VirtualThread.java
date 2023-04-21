@@ -215,7 +215,7 @@ final class VirtualThread extends BaseVirtualThread {
             if (cont.isDone()) {
                 afterTerminate(/*executed*/ true);
             } else {
-                System.out.println("AfterYield thread");
+//                System.out.println("AfterYield thread");
                 afterYield();
             }
         }
@@ -230,13 +230,13 @@ final class VirtualThread extends BaseVirtualThread {
     private void submitRunContinuation(boolean lazySubmit) {
         try {
             if (lazySubmit && scheduler instanceof ForkJoinPool pool) {
-                System.out.println("submit lazy");
+//                System.out.println("submit lazy");
                 pool.lazySubmit(ForkJoinTask.adapt(runContinuation));
-                System.out.println("submited lazy");
+//                System.out.println("submited lazy");
             } else {
-                System.out.println("Try to submit task");
+//                System.out.println("Try to submit task");
                 scheduler.execute(runContinuation);
-                System.out.println("Task submitted");
+//                System.out.println("Task submitted");
             }
         } catch (RejectedExecutionException ree) {
             // record event
@@ -401,7 +401,7 @@ final class VirtualThread extends BaseVirtualThread {
                 lazySubmitRunContinuation();
             }
         } else if (s == YIELDING) {   // Thread.yield
-            System.out.println("YIELDING");
+//            System.out.println("YIELDING");
             setState(RUNNABLE);
 
             // notify JVMTI that unmount has completed, thread is runnable
@@ -722,7 +722,7 @@ final class VirtualThread extends BaseVirtualThread {
         assert Thread.currentThread() == this;
         setState(YIELDING);
         try {
-            System.out.println("Yield thread");
+//            System.out.println("Yield thread");
             yieldContinuation();
         } finally {
             assert Thread.currentThread() == this;
