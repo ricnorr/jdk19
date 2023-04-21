@@ -68,7 +68,7 @@ public class ForkJoinWorkerThread extends Thread {
     final ForkJoinPool pool;                // the pool this thread works in
     final ForkJoinPool.WorkQueue workQueue; // work-stealing mechanics
 
-    volatile ForkJoinTask<?> taskToRunNext; // task to run next
+    final ConcurrentLinkedQueue<ForkJoinTask<?>> tasksToRunNext = new ConcurrentLinkedQueue<>(); // tasks to run next
 
     /**
      * Full nonpublic constructor.

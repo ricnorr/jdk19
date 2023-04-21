@@ -1162,12 +1162,11 @@ public class ForkJoinPool extends AbstractExecutorService {
          * @param fifo nonzero if FIFO mode
          */
         final ForkJoinTask<?> nextLocalTask(int fifo) {
-          ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)Thread.currentThread();
-          if (workerThread.taskToRunNext != null) {
-            ForkJoinTask<?> res = workerThread.taskToRunNext;
-            workerThread.taskToRunNext = null;
-            return res;
-          }
+            ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)Thread.currentThread();
+            ForkJoinTask<?> res = workerThread.tasksToRunNext.poll();
+            if (res != null) {
+              return res;
+            }
             ForkJoinTask<?> t = null;
             ForkJoinTask<?>[] a = array;
             int p = top, s = p - 1, b = base, nb, cap;
@@ -2908,10 +2907,7 @@ public class ForkJoinPool extends AbstractExecutorService {
    */
   public void runOnThisCarrier(ForkJoinTask<?> task, Thread carrier) {
     ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)carrier;
-    if (workerThread.taskToRunNext != null) {
-      throw new IllegalStateException("taskToRunNext i not null");
-    }
-    workerThread.taskToRunNext = task;
+    workerThread.tasksToRunNext.offer(task);
   }
 
     // Added mainly for possible use in Loom
