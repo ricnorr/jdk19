@@ -1191,6 +1191,7 @@ public class ForkJoinPool extends AbstractExecutorService {
                 } while (p - b > 0);
                 U.storeStoreFence(); // for timely index updates
             }
+            System.out.println("Found task: " + t.toString());
             return t;
         }
 
