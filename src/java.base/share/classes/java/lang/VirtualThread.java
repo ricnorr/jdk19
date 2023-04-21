@@ -82,7 +82,7 @@ final class VirtualThread extends BaseVirtualThread {
     // virtual thread state, accessed by VM
     private volatile int state;
 
-    private volatile boolean isInCriticalSection; // is thread in critical section
+    private volatile Thread threadOnWhichInCriticalSection; // is thread in critical section
 
     /*
      * Virtual thread state and transitions:
@@ -229,8 +229,8 @@ final class VirtualThread extends BaseVirtualThread {
      * @see ForkJoinPool#lazySubmit(ForkJoinTask)
      */
     private void submitRunContinuation(boolean lazySubmit) {
-        if (isInCriticalSection) { // when yield in critical section
-            submitRunContinuationOnThisCarrier(Thread.currentCarrierThread());
+        if (threadOnWhichInCriticalSection != null) { // when yield in critical section
+            submitRunContinuationOnThisCarrier(threadOnWhichInCriticalSection);
             return;
         }
         try {
@@ -719,14 +719,14 @@ final class VirtualThread extends BaseVirtualThread {
      * Mark virtual thread enters critical section
      */
     void markCriticalSectionStart() {
-        isInCriticalSection = true;
+        threadOnWhichInCriticalSection = carrierThread;
     }
 
     /**
      * Mark virtual thread leaves critical section
      */
     void markCriticalSectionEnd() {
-        isInCriticalSection = false;
+        threadOnWhichInCriticalSection = null;
     }
 
     /**
