@@ -1833,6 +1833,11 @@ public class ForkJoinPool extends AbstractExecutorService {
               if ((src = awaitWork(w)) == 0) {
                 continue;
               }
+              res = workerThread.tasksToRunNext.poll();
+              if (res != null) {
+                res.doExec();
+                continue;
+              }
               break;
             }
             w.access = STOP;                    // record normal termination
