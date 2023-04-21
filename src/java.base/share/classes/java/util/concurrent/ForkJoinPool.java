@@ -1167,6 +1167,7 @@ public class ForkJoinPool extends AbstractExecutorService {
             if (res != null) {
               return res;
             }
+            System.out.println("No task found");
             ForkJoinTask<?> t = null;
             ForkJoinTask<?>[] a = array;
             int p = top, s = p - 1, b = base, nb, cap;

@@ -397,6 +397,7 @@ final class VirtualThread extends BaseVirtualThread {
                 lazySubmitRunContinuation();
             }
         } else if (s == YIELDING) {   // Thread.yield
+            System.out.println("YIELDING");
             setState(RUNNABLE);
 
             // notify JVMTI that unmount has completed, thread is runnable
