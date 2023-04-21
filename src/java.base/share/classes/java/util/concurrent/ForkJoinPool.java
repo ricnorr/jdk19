@@ -1819,6 +1819,9 @@ public class ForkJoinPool extends AbstractExecutorService {
                 res.doExec();
                 continue;
               }
+              if (workerThread.inCriticalSectionCnt.get() != 0) {
+                continue; // don't sleep when virtual thread in critical section
+              }
               if ((src = awaitWork(w)) == 0) {
                 continue;
               }

@@ -39,6 +39,7 @@ import java.security.AccessController;
 import java.security.AccessControlContext;
 import java.security.PrivilegedAction;
 import java.security.ProtectionDomain;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A thread managed by a {@link ForkJoinPool}, which executes
@@ -69,6 +70,11 @@ public class ForkJoinWorkerThread extends Thread {
     final ForkJoinPool.WorkQueue workQueue; // work-stealing mechanics
 
     final ConcurrentLinkedQueue<ForkJoinTask<?>> tasksToRunNext = new ConcurrentLinkedQueue<>(); // tasks to run next
+
+    /**
+     * inCriticalSectionCnt
+     */
+    public final AtomicInteger inCriticalSectionCnt = new AtomicInteger(0);
 
     /**
      * Full nonpublic constructor.

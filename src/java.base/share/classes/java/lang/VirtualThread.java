@@ -720,6 +720,9 @@ final class VirtualThread extends BaseVirtualThread {
      */
     void markCriticalSectionStart() {
         threadOnWhichInCriticalSection = carrierThread;
+        if (threadOnWhichInCriticalSection instanceof ForkJoinWorkerThread workerThread) {
+            workerThread.inCriticalSectionCnt.incrementAndGet();
+        }
     }
 
     /**
@@ -727,6 +730,9 @@ final class VirtualThread extends BaseVirtualThread {
      */
     void markCriticalSectionEnd() {
         threadOnWhichInCriticalSection = null;
+        if (threadOnWhichInCriticalSection instanceof ForkJoinWorkerThread workerThread) {
+            workerThread.inCriticalSectionCnt.decrementAndGet();
+        }
     }
 
     /**
