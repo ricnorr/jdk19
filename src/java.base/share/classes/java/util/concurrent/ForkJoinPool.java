@@ -1188,6 +1188,8 @@ public class ForkJoinPool extends AbstractExecutorService {
             return t;
         }
 
+
+
         /**
          * Takes next task, if one exists, using configured mode.
          * (Always owned, never called for Common pool.)
@@ -1801,10 +1803,36 @@ public class ForkJoinPool extends AbstractExecutorService {
     final void runWorker(WorkQueue w) {
         if (w != null) {                        // skip on failed init
             int r = w.stackPred, src = 0;       // use seed from registerWorker
-            do {
-                r ^= r << 13; r ^= r >>> 17; r ^= r << 5; // xorshift
-            } while ((src = scan(w, src, r)) >= 0 ||
-                     (src = awaitWork(w)) == 0);
+            while (true) {
+              ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)Thread.currentThread();
+              ForkJoinTask<?> res = workerThread.tasksToRunNext.poll();
+              if (res != null) {
+                res.doExec();
+                continue;
+              }
+              r ^= r << 13; r ^= r >>> 17; r ^= r << 5; // xorshift
+              if ((src = scan(w, src, r)) >= 0) {
+                continue;
+              }
+              res = workerThread.tasksToRunNext.poll();
+              if (res != null) {
+                res.doExec();
+                continue;
+              }
+              if (workerThread.inCriticalSectionCnt.get() != 0) {
+                continue; // don't sleep when virtual thread in critical section
+              }
+              System.out.println(Thread.currentThread() + " await work");
+              if ((src = awaitWork(w)) == 0) {
+                continue;
+              }
+              res = workerThread.tasksToRunNext.poll();
+              if (res != null) {
+                res.doExec();
+                continue;
+              }
+              break;
+            }
             w.access = STOP;                    // record normal termination
         }
     }
@@ -1883,6 +1911,7 @@ public class ForkJoinPool extends AbstractExecutorService {
                 if (runState < 0)
                     return -1;
                 w.access = PARKED;               // enable unpark
+                System.out.println(Thread.currentThread() + " sleep");
                 if (w.phase < 0) {
                     if (idle)
                         LockSupport.parkUntil(deadline);
@@ -2892,6 +2921,16 @@ public class ForkJoinPool extends AbstractExecutorService {
                           ? (ForkJoinTask<Void>) task // avoid re-wrap
                           : new ForkJoinTask.AdaptedRunnableAction(task));
     }
+
+  /**
+   * FWFDSFSD
+   * @param task FDFSD
+   * @param carrier FDSFFDS
+   */
+  public void runOnThisCarrier(ForkJoinTask<?> task, Thread carrier) {
+    ForkJoinWorkerThread workerThread = (ForkJoinWorkerThread)carrier;
+    workerThread.tasksToRunNext.offer(task);
+  }
 
     // Added mainly for possible use in Loom
 

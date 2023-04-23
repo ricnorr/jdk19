@@ -82,6 +82,8 @@ final class VirtualThread extends BaseVirtualThread {
     // virtual thread state, accessed by VM
     private volatile int state;
 
+    private volatile Thread threadOnWhichInCriticalSection; // is thread in critical section
+
     /*
      * Virtual thread state and transitions:
      *
@@ -227,6 +229,11 @@ final class VirtualThread extends BaseVirtualThread {
      * @see ForkJoinPool#lazySubmit(ForkJoinTask)
      */
     private void submitRunContinuation(boolean lazySubmit) {
+        if (threadOnWhichInCriticalSection != null) { // when yield in critical section
+            System.out.println("threadOnWhichInCriticalSection is not null");
+            submitRunContinuationOnThisCarrier(threadOnWhichInCriticalSection);
+            return;
+        }
         try {
             if (lazySubmit && scheduler instanceof ForkJoinPool pool) {
                 pool.lazySubmit(ForkJoinTask.adapt(runContinuation));
@@ -645,6 +652,88 @@ final class VirtualThread extends BaseVirtualThread {
                 }
             }
         }
+    }
+
+    /**
+     * Submits the runContinuation task to the scheduler.
+     * @param {@code lazySubmit} to lazy submit
+     * @throws RejectedExecutionException
+     * @see ForkJoinPool#lazySubmit(ForkJoinTask)
+     */
+    private void submitRunContinuationOnThisCarrier(Thread carrierThread) {
+        try {
+            if (scheduler instanceof ForkJoinPool pool) {
+                pool.runOnThisCarrier(ForkJoinTask.adapt(runContinuation), carrierThread);
+            } else {
+                scheduler.execute(runContinuation);
+            }
+        } catch (RejectedExecutionException ree) {
+            // record event
+            var event = new VirtualThreadSubmitFailedEvent();
+            if (event.isEnabled()) {
+                event.javaThreadId = threadId();
+                event.exceptionMessage = ree.getMessage();
+                event.commit();
+            }
+            throw ree;
+        }
+    }
+
+
+    /**
+     * Re-enables this virtual thread for scheduling. If the virtual thread was
+     * {@link #park() parked} then it will be unblocked, otherwise its next call
+     * to {@code park} or {@linkplain #parkNanos(long) parkNanos} is guaranteed
+     * not to block.
+     * @throws RejectedExecutionException if the scheduler cannot accept a task
+     */
+    @ChangesCurrentThread
+    void unparkAndRunOnThisCarrier(Thread car) {
+        Thread currentThread = Thread.currentThread();
+        if (!getAndSetParkPermit(true) && currentThread != this) {
+            int s = state();
+            if (s == PARKED && compareAndSetState(PARKED, RUNNABLE)) {
+                if (currentThread instanceof VirtualThread vthread) {
+                    Thread carrier = vthread.carrierThread;
+                    carrier.setCurrentThread(carrier);
+                    try {
+                        submitRunContinuationOnThisCarrier(car);
+                    } finally {
+                        carrier.setCurrentThread(vthread);
+                    }
+                } else {
+                    throw new IllegalStateException("Expected virtual thread");
+                }
+            } else if (s == PINNED) {
+                // unpark carrier thread when pinned.
+                synchronized (carrierThreadAccessLock()) {
+                    Thread carrier = carrierThread;
+                    if (carrier != null && state() == PINNED) {
+                        U.unpark(carrier);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Mark virtual thread enters critical section
+     */
+    void markCriticalSectionStart() {
+        threadOnWhichInCriticalSection = carrierThread;
+        if (threadOnWhichInCriticalSection instanceof ForkJoinWorkerThread workerThread) {
+            workerThread.inCriticalSectionCnt.incrementAndGet();
+        }
+    }
+
+    /**
+     * Mark virtual thread leaves critical section
+     */
+    void markCriticalSectionEnd() {
+        if (threadOnWhichInCriticalSection instanceof ForkJoinWorkerThread workerThread) {
+            workerThread.inCriticalSectionCnt.decrementAndGet();
+        }
+        threadOnWhichInCriticalSection = null;
     }
 
     /**

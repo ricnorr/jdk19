@@ -2616,6 +2616,30 @@ public final class System {
                 }
             }
 
+            public void unparkVirtualAndRunOnThisCarrier(Thread thread, Thread carrier) {
+                if (thread instanceof VirtualThread vthread) {
+                    vthread.unparkAndRunOnThisCarrier(carrier);
+                } else {
+                    throw new WrongThreadException();
+                }
+            }
+
+            public void markCriticalSectionStart(Thread thread) {
+                if (thread instanceof VirtualThread vthread) {
+                    vthread.markCriticalSectionStart();
+                } else {
+                    throw new WrongThreadException();
+                }
+            }
+
+            public void markCriticalSectionEnd(Thread thread) {
+                if (thread instanceof VirtualThread vthread) {
+                    vthread.markCriticalSectionEnd();
+                } else {
+                    throw new WrongThreadException();
+                }
+            }
+
             public StackWalker newStackWalkerInstance(Set<StackWalker.Option> options,
                                                       ContinuationScope contScope,
                                                       Continuation continuation) {
