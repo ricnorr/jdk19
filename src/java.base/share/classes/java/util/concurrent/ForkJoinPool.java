@@ -1822,7 +1822,7 @@ public class ForkJoinPool extends AbstractExecutorService {
               if (workerThread.inCriticalSectionCnt.get() != 0) {
                 continue; // don't sleep when virtual thread in critical section
               }
-              System.out.println("Await work");
+              System.out.println(Thread.currentThread() + " await work");
               if ((src = awaitWork(w)) == 0) {
                 continue;
               }
@@ -1911,6 +1911,7 @@ public class ForkJoinPool extends AbstractExecutorService {
                 if (runState < 0)
                     return -1;
                 w.access = PARKED;               // enable unpark
+                System.out.println(Thread.currentThread() + " sleep");
                 if (w.phase < 0) {
                     if (idle)
                         LockSupport.parkUntil(deadline);
