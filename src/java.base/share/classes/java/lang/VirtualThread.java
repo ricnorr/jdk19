@@ -230,6 +230,7 @@ final class VirtualThread extends BaseVirtualThread {
      */
     private void submitRunContinuation(boolean lazySubmit) {
         if (threadOnWhichInCriticalSection != null) { // when yield in critical section
+            System.out.println("threadOnWhichInCriticalSection is not null");
             submitRunContinuationOnThisCarrier(threadOnWhichInCriticalSection);
             return;
         }
@@ -729,10 +730,10 @@ final class VirtualThread extends BaseVirtualThread {
      * Mark virtual thread leaves critical section
      */
     void markCriticalSectionEnd() {
-        threadOnWhichInCriticalSection = null;
         if (threadOnWhichInCriticalSection instanceof ForkJoinWorkerThread workerThread) {
             workerThread.inCriticalSectionCnt.decrementAndGet();
         }
+        threadOnWhichInCriticalSection = null;
     }
 
     /**
